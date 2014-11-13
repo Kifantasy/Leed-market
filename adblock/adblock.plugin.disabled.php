@@ -4,7 +4,7 @@
 @author Phyks <phyks@phyks.me>
 @link http://www.phyks.me
 @licence BEERWARE (See README.md file)
-@version 2.2.1
+@version 2.2.2
 @description The adblock plugin for leed allows to block embedded flash contents and / or images in feeds. You can set it fine-grained for each feed. You can also disable images only for mobile devices.
  */
 
@@ -24,120 +24,124 @@ function adblock_trim_list($input) {
 function adblock_plugin_treat_events(&$events) {
     //Set params
     $configurationManager = new Configuration();
-    $partial = $configurationManager->get('articleView') == "partial";
+    $conf = $configurationManager->getAll();
+    $article_display_mode = $configurationManager->get('articleDisplayMode');
 
-    $adblock_constants = file_get_contents("adblock_constants.php");
-    $adblock_constants = explode("\n", $adblock_constants);
+    if( $article_display_mode != 'title' ) {
+echo 'je passe';
+        $adblock_constants = file_get_contents("adblock_constants.php");
+        $adblock_constants = explode("\n", $adblock_constants);
 
-    $adblock_params = array();
-    foreach($adblock_constants as $adblock_constant) {
-        if(trim($adblock_constant) != "") {
-            $adblock_constant = explode("=", $adblock_constant);
-            $adblock_params[trim($adblock_constant[0])] = trim($adblock_constant[1]);
+        $adblock_params = array();
+        foreach($adblock_constants as $adblock_constant) {
+            if(trim($adblock_constant) != "") {
+                $adblock_constant = explode("=", $adblock_constant);
+                $adblock_params[trim($adblock_constant[0])] = trim($adblock_constant[1]);
+            }
         }
-    }
 
-    if(isset($adblock_params["flash_enabled"]) && $adblock_params["flash_enabled"] == "1") {
-        $filter_flash = true;
-        if(isset($adblock_params["flash_block"]) && $adblock_params["flash_block"] == "1") {
-           $block_flash = true;
-        }
-        else {
-            $block_flash = false;
-        }
-    }
-    else {
-        $filter_flash = false;
-    }
-    $flash_except_list = explode(',', trim($adblock_params["flash_list"], "\t\n\r\0\x0B,"));
-    $flash_except_list = adblock_trim_list($flash_except_list);
-
-    if(isset($adblock_params["img_enabled"]) && $adblock_params["img_enabled"] == "1") {
-        $filter_img = true;
-        if(isset($adblock_params["img_block"]) && $adblock_params["img_block"] == "1") {
-            $block_img = true;
+        if(isset($adblock_params["flash_enabled"]) && $adblock_params["flash_enabled"] == "1") {
+            $filter_flash = true;
+            if(isset($adblock_params["flash_block"]) && $adblock_params["flash_block"] == "1") {
+               $block_flash = true;
+            }
+            else {
+                $block_flash = false;
+            }
         }
         else {
-            $block_img = false;
+            $filter_flash = false;
         }
+        $flash_except_list = explode(',', trim($adblock_params["flash_list"], "\t\n\r\0\x0B,"));
+        $flash_except_list = adblock_trim_list($flash_except_list);
 
-        if(isset($adblock_params["img_only_mobiles"]) && $adblock_params["img_only_mobiles"] == "1" && !adblock_isMobileDevice()) { //If filter only on mobile devices and not a mobile device
+        if(isset($adblock_params["img_enabled"]) && $adblock_params["img_enabled"] == "1") {
+            $filter_img = true;
+            if(isset($adblock_params["img_block"]) && $adblock_params["img_block"] == "1") {
+                $block_img = true;
+            }
+            else {
+                $block_img = false;
+            }
+
+            if(isset($adblock_params["img_only_mobiles"]) && $adblock_params["img_only_mobiles"] == "1" && !adblock_isMobileDevice()) { //If filter only on mobile devices and not a mobile device
+                $filter_img = false;
+            }
+        }
+        else {
             $filter_img = false;
         }
-    }
-    else {
-        $filter_img = false;
-    }
-    $img_except_list = explode(',', trim($adblock_params["img_list"], "\t\n\r\0\x0B,"));
-    $img_except_list = adblock_trim_list($img_except_list);
+        $img_except_list = explode(',', trim($adblock_params["img_list"], "\t\n\r\0\x0B,"));
+        $img_except_list = adblock_trim_list($img_except_list);
 
-    $elegant_degradation = (isset($adblock_params["elegant_degradation"]) && $adblock_params["elegant_degradation"] == "1") ? true : false;
+        $elegant_degradation = (isset($adblock_params["elegant_degradation"]) && $adblock_params["elegant_degradation"] == "1") ? true : false;
 
-    foreach($events as $event) {
-        $filtered_content = ($partial) ? $event->getDescription : $event->getContent();
-        $modified = false;
+        foreach($events as $event) {
+            $filtered_content = ($configurationManager->get('articleDisplayMode') == 'summary') ? $event->getDescription() : $event->getContent();
+            $modified = false;
 
-        // Flash handling
-        if($filter_flash) {
-            if(($block_flash && !in_array($event->getFeed(), $flash_except_list)) || (!$block_flash && in_array($event->getFeed(), $flash_except_list))) {
-                //Replace flash content
-                preg_match_all("#<iframe.{0,}/(iframe)?>#U", $filtered_content, $object_list_in_event, PREG_SET_ORDER);
+            // Flash handling
+            if($filter_flash) {
+                if(($block_flash && !in_array($event->getFeed(), $flash_except_list)) || (!$block_flash && in_array($event->getFeed(), $flash_except_list))) {
+                    //Replace flash content
+                    preg_match_all("#<iframe.{0,}/(iframe)?>#U", $filtered_content, $object_list_in_event, PREG_SET_ORDER);
 
-                foreach($object_list_in_event as $object) {
-                    if(!$elegant_degradation) {
-                        $replacement_content = '
-                            <span class="blocked_flash" onclick="return adblock_unblock_flash(this, \''.htmlspecialchars($object[0]).'\');">X</span>
-                            ';
-                        $filtered_content = str_replace($object[0], $replacement_content, $filtered_content);
+                    foreach($object_list_in_event as $object) {
+                        if(!$elegant_degradation) {
+                            $replacement_content = '
+                                <span class="blocked_flash" onclick="return adblock_unblock_flash(this, \''.htmlspecialchars($object[0]).'\');">X</span>
+                                ';
+                            $filtered_content = str_replace($object[0], $replacement_content, $filtered_content);
+                        }
+                        else {
+                            preg_match("#width=[\"']([0-9]{1,})[\"']#U", $object[0], $width);
+                            preg_match("#height=[\"']([0-9]{1,})[\"']#U", $object[0], $height);
+                            $font_size = min($width[1], $height[1]);
+
+                            $replacement_content = '
+                                    <span class="blocked_flash" '.((!empty($width[1]) && !empty($height[1])) ? 'style="width: '.$width[1].'px; height: '.$height[1].'px; padding: 0; padding-top: '.((int) $font_size) / 2 .'px; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; font-size: '.$font_size.'px;"' : '').' onclick="return adblock_unblock_flash(this, \''.htmlspecialchars($object[0]).'\');">X</span>
+                                ';
+                            $filtered_content = str_replace($object[0], $replacement_content, $filtered_content);
+                        }
                     }
-                    else {
-                        preg_match("#width=[\"']([0-9]{1,})[\"']#U", $object[0], $width);
-                        preg_match("#height=[\"']([0-9]{1,})[\"']#U", $object[0], $height);
-                        $font_size = min($width[1], $height[1]);
 
-                        $replacement_content = '
-                                <span class="blocked_flash" '.((!empty($width[1]) && !empty($height[1])) ? 'style="width: '.$width[1].'px; height: '.$height[1].'px; padding: 0; padding-top: '.((int) $font_size) / 2 .'px; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; font-size: '.$font_size.'px;"' : '').' onclick="return adblock_unblock_flash(this, \''.htmlspecialchars($object[0]).'\');">X</span>
-                            ';
-                        $filtered_content = str_replace($object[0], $replacement_content, $filtered_content);
-                    }
+                    $modified = true;
                 }
-
-                $modified = true;
             }
-        }
 
-        // Images handling
-        if($filter_img) {
-            if(($block_img && !in_array($event->getFeed(), $img_except_list)) || (!$block_img && in_array($event->getFeed(), $img_except_list))) {
-                //Replace images
-                preg_match_all("#<img.{0,}src=[\"'](.{1,})[\"'].{0,}/?(img)?>#U", $filtered_content, $img_list_in_event, PREG_SET_ORDER);
+            // Images handling
+            if($filter_img) {
+                if(($block_img && !in_array($event->getFeed(), $img_except_list)) || (!$block_img && in_array($event->getFeed(), $img_except_list))) {
+                    //Replace images
+                    preg_match_all("#<img.{0,}src=[\"'](.{1,})[\"'].{0,}/?(img)?>#U", $filtered_content, $img_list_in_event, PREG_SET_ORDER);
 
-                foreach($img_list_in_event as $img) {
-                    if(!$elegant_degradation) {
-                        $replacement_content = '
-                                <span class="blocked_image" onclick="return adblock_unblock_img(this, \''.urlencode($img[1]).'\');">X</span>
-                            ';
-                        $filtered_content = str_replace($img[0], $replacement_content, $filtered_content);
+                    foreach($img_list_in_event as $img) {
+                        if(!$elegant_degradation) {
+                            $replacement_content = '
+                                    <span class="blocked_image" onclick="return adblock_unblock_img(this, \''.urlencode($img[1]).'\');">X</span>
+                                ';
+                            $filtered_content = str_replace($img[0], $replacement_content, $filtered_content);
+                        }
+                        else {
+                            $content_size = getimagesize($img[1]); //Index 0 is width, index 1 is height
+                            $font_size = min($content_size[0], $content_size[1]);
+                            $replacement_content = '
+                                    <span class="blocked_image" style="width:'.(int) $content_size[0].'px; height:'.(int) $content_size[1].'px; padding:0; padding-top: '.((int) $font_size) / 2 .'px; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; font-size: '.$font_size.'px;" onclick="return adblock_unblock_img(this, \''.urlencode($img[1]).'\'):">X</span>
+                                ';
+                            $filtered_content = str_replace($img[0], $replacement_content, $filtered_content);
+                        }
                     }
-                    else {
-                        $content_size = getimagesize($img[1]); //Index 0 is width, index 1 is height
-                        $font_size = min($content_size[0], $content_size[1]);
-                        $replacement_content = '
-                                <span class="blocked_image" style="width:'.(int) $content_size[0].'px; height:'.(int) $content_size[1].'px; padding:0; padding-top: '.((int) $font_size) / 2 .'px; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; font-size: '.$font_size.'px;" onclick="return adblock_unblock_img(this, \''.urlencode($img[1]).'\'):">X</span>
-                            ';
-                        $filtered_content = str_replace($img[0], $replacement_content, $filtered_content);
-                    }
+
+                    $modified = true;
                 }
-
-                $modified = true;
             }
-        }
 
-        if($modified) {
-            if($partial)
-                $event->setDescription($filtered_content);
-            else
-                $event->setContent($filtered_content);
+            if($modified) {
+                if($article_display_mode == 'summary')
+                    $event->setDescription($filtered_content);
+                else
+                    $event->setContent($filtered_content);
+            }
         }
     }
 }
