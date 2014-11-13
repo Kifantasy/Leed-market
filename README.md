@@ -19,7 +19,6 @@ wiki plugins : http://projet.idleman.fr/leed/?page=Plugins
 * fleaditlater       - Ajoute un bouton permettant de marquer un evenement comme "à lire plus tard".
 * fleedicon_content  - Ajoute un favicon à gauche de chaque item lors de la lecture.
 * fleexed            - Repositionne les menus en position fixed.
-* i18n               - permet de créer et modifier les fichiers de traduction de Leed (internationalisation)
 * instapaper         - Affiche les évenements directement sur instapaper lors du clic sur le titre d'un événement.
 * leedBrowser        - Lors du clic sur un lien d'événement, le site est ouvert dans un navigateur discret avec des boutons : marquer comme lu, favoriser...
 * leedHomeLink       - Ajoute un menu surgissant afin d'accéder directement à des liens externes (blog, applications).
