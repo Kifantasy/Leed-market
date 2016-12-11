@@ -10,9 +10,10 @@
 */
 
 function openanon_plugin_button(&$event){
+	$mysqli = new MysqlEntity();
 	$requete = 'SELECT link FROM `'.MYSQL_PREFIX.'event` WHERE id = '.$event->getId();
-	$query = mysql_query($requete);
-	$result = mysql_fetch_row($query);
+	$query = $mysqli->customQuery($requete);
+	$result = $query->fetch_row();
 	$link = $result[0];
 	echo '<a title="'._t('P_OPENANON_TITLE').'" target="_blank" href="'.$link.'" rel="noreferrer">'._t('P_OPENANON_LINKNAME').'</a> ';
 }

@@ -11,13 +11,14 @@
 
 
 function shaarleed_plugin_button(&$event){
+	$mysqli = new MysqlEntity();
 	$configurationManager = new Configuration();
 	$configurationManager->getAll();
 	$shareOption = $configurationManager->get('plugin_shaarli_link');
 	
 	$requete = 'SELECT link, title FROM `'.MYSQL_PREFIX.'event` WHERE id = '.$event->getId();
-	$query = mysql_query($requete);
-	$result = mysql_fetch_row($query);
+	$query = $mysqli->customQuery($requete);
+	$result = $query->fetch_row();
 	$link = $result[0];
 	$title = $result[1];
   
