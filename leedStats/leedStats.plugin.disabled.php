@@ -13,6 +13,7 @@ function leedStats_plugin_setting_link(&$myUser){
 }
 
 function leedStats_plugin_setting_bloc(&$myUser){
+	$mysqli = new MysqlEntity();
 	$configurationManager = new Configuration();
 	$configurationManager->getAll();
 
@@ -32,7 +33,7 @@ function leedStats_plugin_setting_bloc(&$myUser){
                 (SELECT count(1) FROM `'.MYSQL_PREFIX.'event`) as nbTotal,
                 (SELECT count(1) FROM `'.MYSQL_PREFIX.'event` WHERE favorite = 1) as nbFavorite
                 ';
-    $query = mysql_query($requete);
+    $query = $mysqli->customQuery($requete);
     if($query!=null){
         echo '<div id="result_leedStats1" class="result_leedStats1">
                  <table>
@@ -42,7 +43,7 @@ function leedStats_plugin_setting_bloc(&$myUser){
                         <th class="leedStats_border leedStats_th">'._t('P_LEEDSTATS_NBART_LU').'</th>
                         <th class="leedStats_border leedStats_th">'._t('P_LEEDSTATS_NBFAV').'</th>
         ';
-        while($data = mysql_fetch_array($query)){
+        while($data = $query->fetch_array()){
             echo '
                 <tr>
                     <td class="leedStats_border leedStats_textright">'.$data['nbFeed'].'</td>
@@ -70,7 +71,7 @@ function leedStats_plugin_setting_bloc(&$myUser){
                 GROUP BY name
                 ORDER BY name
                 ';
-    $query = mysql_query($requete);
+    $query = $mysqli->customQuery($requete);
     if($query!=null){
         echo '<div id="result_leedStats1" class="result_leedStats1">
                  <table>
@@ -80,7 +81,7 @@ function leedStats_plugin_setting_bloc(&$myUser){
                         <th class="leedStats_border leedStats_th">'._t('P_LEEDSTATS_NBART_LU').'</th>
                         <th class="leedStats_border leedStats_th">'._t('P_LEEDSTATS_NBFAV').'</th>
         ';
-        while($data = mysql_fetch_array($query)){
+        while($data = $query->fetch_array()){
             echo '
                 <tr>
                     <td class="leedStats_border leedStats_textright">'.short_name($data['name'],32).'</td>
